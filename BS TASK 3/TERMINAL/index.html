@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Auth System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 1200px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            background: rgba(102, 126, 234, 0.1);
+            border: 2px solid transparent;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            margin-right: 10px;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .dashboard-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        .dashboard-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .dashboard-card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .user-info {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .user-info h3 {
+            margin-bottom: 10px;
+        }
+
+        .user-info p {
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .token-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            color: #495057;
+            margin-bottom: 15px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .users-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+        }
+
+        .users-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .role-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .role-admin {
+            background: #dc3545;
+            color: white;
+        }
+
+        .role-user {
+            background: #28a745;
+            color: white;
+        }
+
+        .role-owner {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .protected-content {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05));
+            border: 2px solid #28a745;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .protected-content h4 {
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .nav-tab {
+                width: 200px;
+                text-align: center;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 JWT Auth System</h1>
+            <p>Complete Authentication & Authorization with Role-Based Access Control</p>
+        </div>
+
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="showSection('login')">Login</div>
+            <div class="nav-tab" onclick="showSection('register')">Register</div>
+            <div class="nav-tab" onclick="showSection('dashboard')">Dashboard</div>
+            <div class="nav-tab" onclick="showSection('users')">Users (Admin)</div>
+            <div class="nav-tab" onclick="showSection('profile')">Profile</div>
+        </div>
+
+        <!-- Login Section -->
+        <div id="login" class="content-section active">
+            <div class="form-container">
+                <h2 style="text-align: center; margin-bottom: 30px; color: #333;">Login to Your Account</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">Email Address</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <div id="loginMessage"></div>
+            </div>
+        </div>
+
+        <!-- Register Section -->
+        <div id="register" class="content-section">
+            <div class="form-container">
+                <h2 style="text-align: center; margin-bottom: 30px; color: #333;">Create New Account</h2>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="registerName">Full Name</label>
+                        <input type="text" id="registerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email Address</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <input type="password" id="registerPassword" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="registerRole">Role</label>
+                        <select id="registerRole" required>
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                            <option value="owner">Owner</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </form>
+                <div id="registerMessage"></div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="content-section">
+            <div id="dashboardContent" class="hidden">
+                <div class="user-info" id="userInfo">
+                    <!-- User info will be populated here -->
+                </div>
+                
+                <div class="dashboard">
+                    <div class="dashboard-card">
+                        <h3>🔒 Protected Route Access</h3>
+                        <p>This dashboard is only accessible with a valid JWT token. Your token is automatically included in requests.</p>
+                        <button class="btn btn-success" onclick="testProtectedRoute()">Test Protected API</button>
+                        <div id="protectedApiResult"></div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <h3>🎫 JWT Token Info</h3>
+                        <p>Your current JWT token (truncated for security):</p>
+                        <div class="token-display" id="tokenDisplay">
+                            <!-- Token will be displayed here -->
+                        </div>
+                        <button class="btn btn-secondary" onclick="refreshToken()">Refresh Token</button>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <h3>👤 Profile Management</h3>
+                        <p>Update your profile information and manage your account settings.</p>
+                        <button class="btn btn-primary" onclick="showSection('profile')">Manage Profile</button>
+                    </div>
+                    
+                    <div class="dashboard-card" id="adminCard" style="display: none;">
+                        <h3>⚡ Admin Panel</h3>
+                        <p>Access admin-only features and manage users. This card is only visible to admin users.</p>
+                        <button class="btn btn-primary" onclick="showSection('users')">Manage Users</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="dashboardLogin" class="form-container">
+                <div class="alert alert-info">
+                    <strong>Authentication Required!</strong> Please login to access the dashboard.
+                </div>
+                <button class="btn btn-primary" onclick="showSection('login')">Go to Login</button>
+            </div>
+        </div>
+
+        <!-- Users Section (Admin Only) -->
+        <div id="users" class="content-section">
+            <div id="usersContent" class="hidden">
+                <h2 style="color: #333; margin-bottom: 20px;">User Management (Admin Only)</h2>
+                <div class="protected-content">
+                    <h4>🛡️ Admin Protected Content</h4>
+                    <p>This section demonstrates role-based access control. Only users with 'admin' or 'owner' roles can access this content.</p>
+                </div>
+                
+                <table class="users-table" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Users will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="usersUnauthorized" class="form-container">
+                <div class="alert alert-error">
+                    <strong>Access Denied!</strong> You don't have permission to access this section. Admin or Owner role required.
+                </div>
+                <button class="btn btn-primary" onclick="showSection('dashboard')">Back to Dashboard</button>
+            </div>
+        </div>
+
+        <!-- Profile Section -->
+        <div id="profile" class="content-section">
+            <div id="profileContent" class="hidden">
+                <div class="form-container">
+                    <h2 style="text-align: center; margin-bottom: 30px; color: #333;">Profile Settings</h2>
+                    <form id="profileForm">
+                        <div class="form-group">
+                            <label for="profileName">Full Name</label>
+                            <input type="text" id="profileName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profileEmail">Email Address</label>
+                            <input type="email" id="profileEmail" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="profileRole">Role</label>
+                            <input type="text" id="profileRole" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">New Password (optional)</label>
+                            <input type="password" id="newPassword" minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                        <button type="button" class="btn btn-danger" onclick="logout()" style="margin-left: 10px;">Logout</button>
+                    </form>
+                    <div id="profileMessage"></div>
+                </div>
+            </div>
+            
+            <div id="profileLogin" class="form-container">
+                <div class="alert alert-info">
+                    <strong>Authentication Required!</strong> Please login to access your profile.
+                </div>
+                <button class="btn btn-primary" onclick="showSection('login')">Go to Login</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulated bcrypt-like password hashing (for demo purposes)
+        class SimpleHash {
+            static async hash(password) {
+                // Simple hash simulation - in real app, use proper bcrypt
+                let hash = 0;
+                for (let i = 0; i < password.length; i++) {
+                    const char = password.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash; // Convert to 32-bit integer
+                }
+                return 'hash_' + Math.abs(hash).toString(16) + '_salt';
+            }
+
+            static async compare(password, hash) {
+                const newHash = await this.hash(password);
+                return newHash === hash;
+            }
+        }
+
+        // JWT Token simulation
+        class JWT {
+            static secret = 'your-super-secret-jwt-key-2024';
+
+            static encode(payload, expiresIn = '1h') {
+                // Simple JWT simulation
+                const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+                const now = Date.now();
+                const exp = now + (expiresIn === '1h' ? 3600000 : 86400000); // 1h or 24h
+                
+                const payloadWithExp = {
+                    ...payload,
+                    iat: now,
+                    exp: exp
+                };
+                
+                const payloadEncoded = btoa(JSON.stringify(payloadWithExp));
+                const signature = btoa(`${header}.${payloadEncoded}.${this.secret}`);
+                
+                return `${header}.${payloadEncoded}.${signature}`;
+            }
+
+            static decode(token) {
+                try {
+                    const parts = token.split('.');
+                    if (parts.length !== 3) return null;
+                    
+                    const payload = JSON.parse(atob(parts[1]));
+                    
+                    // Check if token is expired
+                    if (payload.exp && Date.now() > payload.exp) {
+                        return null;
+                    }
+                    
+                    return payload;
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            static verify(token) {
+                const payload = this.decode(token);
+                return payload !== null;
+            }
+        }
+
+        // Authentication System
+        class AuthSystem {
+            constructor() {
+                this.users = new Map();
+                this.currentUser = null;
+                this.token = null;
+                
+                // Initialize with some demo users
+                this.initializeDemoData();
+                this.loadUserSession();
+                this.setupEventListeners();
+            }
+
+            async initializeDemoData() {
+                // Create demo users with hashed passwords
+                const demoUsers = [
+                    { 
+                        name: 'John Admin', 
+                        email: 'admin@example.com', 
+                        password: 'admin123', 
+                        role: 'admin' 
+                    },
+                    { 
+                        name: 'Jane User', 
+                        email: 'user@example.com', 
+                        password: 'user123', 
+                        role: 'user' 
+                    },
+                    { 
+                        name: 'Bob Owner', 
+                        email: 'owner@example.com', 
+                        password: 'owner123', 
+                        role: 'owner' 
+                    }
+                ];
+
+                for (const user of demoUsers) {
+                    const hashedPassword = await SimpleHash.hash(user.password);
+                    this.users.set(user.email, {
+                        id: Date.now() + Math.random(),
+                        name: user.name,
+                        email: user.email,
+                        password: hashedPassword,
+                        role: user.role,
+                        createdAt: new Date().toISOString(),
+                        status: 'active'
+                    });
+                }
+            }
+
+            setupEventListeners() {
+                // Login form
+                document.getElementById('loginForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleLogin();
+                });
+
+                // Register form
+                document.getElementById('registerForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleRegister();
+                });
+
+                // Profile form
+                document.getElementById('profileForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleProfileUpdate();
+                });
+            }
+
+            async handleLogin() {
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+
+                try {
+                    const user = this.users.get(email);
+                    if (!user) {
+                        this.showMessage('loginMessage', 'Invalid email or password', 'error');
+                        return;
+                    }
+
+                    const isValid = await SimpleHash.compare(password, user.password);
+                    if (!isValid) {
+                        this.showMessage('loginMessage', 'Invalid email or password', 'error');
+                        return;
+                    }
+
+                    // Generate JWT token
+                    const tokenPayload = {
+                        userId: user.id,
+                        email: user.email,
+                        role: user.role,
+                        name: user.name
+                    };
+
+                    this.token = JWT.encode(tokenPayload, '24h');
+                    this.currentUser = user;
+
+                    // Store in memory (in real app, you might use secure storage)
+                    this.saveUserSession();
+
+                    this.showMessage('loginMessage', 'Login successful! Redirecting...', 'success');
+                    setTimeout(() => {
+                        showSection('dashboard');
+                        this.updateUI();
+                    }, 1000);
+
+                } catch (error) {
+                    this.showMessage('loginMessage', 'Login failed. Please try again.', 'error');
+                }
+            }
+
+            async handleRegister() {
+                const name = document.getElementById('registerName').value;
+                const email = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                const role = document.getElementById('registerRole').value;
+
+                try {
+                    // Check if user already exists
+                    if (this.users.has(email)) {
+                        this.showMessage('registerMessage', 'User with this email already exists', 'error');
+                        return;
+                    }
+
+                    // Hash password
+                    const hashedPassword = await SimpleHash.hash(password);
+
+                    // Create new user
+                    const newUser = {
+                        id: Date.now() + Math.random(),
+                        name: name,
+                        email: email,
+                        password: hashedPassword,
+                        role: role,
+                        createdAt: new Date().toISOString(),
+                        status: 'active'
+                    };
+
+                    this.users.set(email, newUser);
+                    this.showMessage('registerMessage', 'Registration successful! You can now login.', 'success');
+                    
+                    // Clear form
+                    document.getElementById('registerForm').reset();
+
+                } catch (error) {
+                    this.showMessage('registerMessage', 'Registration failed. Please try again.', 'error');
+                }
+            }
+
+            async handleProfileUpdate() {
+                if (!this.isAuthenticated()) {
+                    this.showMessage('profileMessage', 'Please login first', 'error');
+                    return;
+                }
+
+                try {
+                    const name = document.getElementById('profileName').value;
+                    const newPassword = document.getElementById('newPassword').value;
+
+                    // Update user data
+                    this.currentUser.name = name;
+
+                    if (newPassword) {
+                        this.currentUser.password = await SimpleHash.hash(newPassword);
+                    }
+
+                    // Update in users map
+                    this.users.set(this.currentUser.email, this.currentUser);
+
+                    // Generate new token with updated info
+                    const tokenPayload = {
+                        userId: this.currentUser.id,
+                        email: this.currentUser.email,
+                        role: this.currentUser.role,
+                        name: this.currentUser.name
+                    };
+
+                    this.token = JWT.encode(tokenPayload, '24h');
+                    this.saveUserSession();
+
+                    this.showMessage('profileMessage', 'Profile updated successfully!', 'success');
+                    this.updateUserInfo();
+
+                } catch (error) {
+                    this.showMessage('profileMessage', 'Profile update failed. Please try again.', 'error');
+                }
+            }
+
+            isAuthenticated() {
+                if (!this.token) return false;
+                return JWT.verify(this.token);
+            }
+
+            hasRole(requiredRoles) {
+                if (!this.isAuthenticated()) return false;
+                
+                const decoded = JWT.decode(this.token);
+                if (!decoded) return false;
+
+                const userRole = decoded.role;
+                return requiredRoles.includes(userRole);
+            }
+
+            saveUserSession() {
+                // In a real app, store token securely (httpOnly cookies, secure storage)
+                // For demo, we'll just keep it in memory
+                console.log('User session saved');
+            }
+
+            loadUserSession() {
+                // In a real app, load from secure storage
+                console.log('User session loaded');
+            }
+
+            logout() {
+                this.currentUser = null;
+                this.token = null;
+                this.updateUI();
+                showSection('login');
+                this.showMessage('loginMessage', 'Logged out successfully', 'success');
+            }
+
+            updateUI() {
+                // Update dashboard
+                if (this.isAuthenticated()) {
+                    document.getElementById('dashboardContent').classList.remove('hidden');
+                    document.getElementById('dashboardLogin').classList.add('hidden');
+                    
+                    document.getElementById('profileContent').classList.remove('hidden');
+                    document.getElementById('profileLogin').classList.add('hidden');
+                    
+                    this.updateUserInfo();
+                    this.updateTokenDisplay();
+                    this.updateProfileForm();
+                    this.checkAdminAccess();
+                    this.updateUsersSection();
+                } else {
+                    document.getElementById('dashboardContent').classList.add('hidden');
+                    document.getElementById('dashboardLogin').classList.remove('hidden');
+                    
+                    document.getElementById('profileContent').classList.add('hidden');
+                    document.getElementById('profileLogin').classList.remove('hidden');
+                }
+            }
+
+            updateUserInfo() {
+                if (!this.currentUser) return;
+
+                const userInfo = document.getElementById('userInfo');
+                userInfo.innerHTML = `
+                    <h3>Welcome, ${this.currentUser.name}!</h3>
+                    <p><strong>Email:</strong> ${this.currentUser.email}</p>
+                    <p><strong>Role:</strong> <span class="role-badge role-${this.currentUser.role}">${this.currentUser.role}</span></p>
+                    <p><strong>Member Since:</strong> ${new Date(this.currentUser.createdAt).toLocaleDateString()}</p>
+                `;
+            }
+
+            updateTokenDisplay() {
+                if (!this.token) return;
+
+                const tokenDisplay = document.getElementById('tokenDisplay');
+                const truncatedToken = this.token.substring(0, 50) + '...';
+                tokenDisplay.textContent = truncatedToken;
+            }
+
+            updateProfileForm() {
+                if (!this.currentUser) return;
+
+                document.getElementById('profileName').value = this.currentUser.name;
+                document.getElementById('profileEmail').value = this.currentUser.email;
+                document.getElementById('profileRole').value = this.currentUser.role;
+            }
+
+            checkAdminAccess() {
+                const adminCard = document.getElementById('adminCard');
+                if (this.hasRole(['admin', 'owner'])) {
+                    adminCard.style.display = 'block';
+                } else {
+                    adminCard.style.display = 'none';
+                }
+            }
+
+            updateUsersSection() {
+                if (this.hasRole(['admin', 'owner'])) {
+                    document.getElementById('usersContent').classList.remove('hidden');
+                    document.getElementById('usersUnauthorized').classList.add('hidden');
+                    this.populateUsersTable();
+                } else {
+                    document.getElementById('usersContent').classList.add('hidden');
+                    document.getElementById('usersUnauthorized').classList.remove('hidden');
+                }
+            }
+
+            populateUsersTable() {
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = '';
+
+                this.users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.name}</td>
+                        <td>${user.email}</td>
+                        <td><span class="role-badge role-${user.
